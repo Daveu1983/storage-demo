@@ -1,6 +1,5 @@
 package com.example.demo;
 
-import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Storage;
@@ -11,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.FileInputStream;
 import java.io.IOException;
 
 @Component
@@ -29,12 +27,10 @@ public class StorageBucket {
         try {
             this.storage = StorageOptions.newBuilder()
                     .setProjectId(projectId)
-                    .setCredentials(ServiceAccountCredentials.fromStream(
-                            new FileInputStream(System.getenv("GCP_BUCKET_CRED"))))
                     .build()
                     .getService();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load service account credentials", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize Google Cloud Storage client", e);
         }
     }
 
@@ -66,7 +62,7 @@ public class StorageBucket {
         }
 
         @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-        public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+        public ResponseEntity<String> uploadFile(@RequestParam MultipartFile file) {
             try {
                 String fileName = file.getOriginalFilename();
                 byte[] content = file.getBytes();
@@ -79,7 +75,7 @@ public class StorageBucket {
         }
 
         @GetMapping("/download")
-        public ResponseEntity<byte[]> downloadFile(@RequestParam("fileName") String fileName) {
+        public ResponseEntity<byte[]> downloadFile(@RequestParam String fileName) {
             try {
                 byte[] fileContent = storageBucket.downloadFile(fileName);
                 return ResponseEntity.ok()
